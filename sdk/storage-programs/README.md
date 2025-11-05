@@ -148,12 +148,7 @@ const address = deriveStorageAddress(
 
 ### Access Control Modes
 
-| Mode | Read Access | Write Access | Use Case |
-|------|-------------|--------------|----------|
-| **private** | Deployer only | Deployer only | Personal data, secrets |
-| **public** | Anyone | Deployer only | Announcements, public data |
-| **restricted** | Deployer + allowed | Deployer + allowed | Shared workspaces, teams |
-| **deployer-only** | Deployer only | Deployer only | Explicit private mode |
+Each program chooses one of four modes (private, deployer-only, restricted, public). Rather than duplicating the full matrix here, see the [Access Control guide](./access-control.md) for the authoritative table, example flows, and security checklists.
 
 ### Storage Limits
 
