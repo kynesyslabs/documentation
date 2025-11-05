@@ -26,39 +26,11 @@ A Storage Program is a deterministic storage container that allows you to:
 
 ## Key Features
 
-### 🔐 Flexible Access Control
-
-Choose from four access control modes:
-
-- **Private**: Only the deployer can read and write
-- **Public**: Anyone can read, only deployer can write (perfect for public announcements)
-- **Restricted**: Only deployer and whitelisted addresses can access
-- **Deployer-Only**: Explicit deployer-only mode
-
-### 📦 Generous Storage Limits
-
-- **128KB per Storage Program**: Store substantial amounts of structured data
-- **64 levels of nesting**: Deep object hierarchies supported
-- **256 character keys**: Descriptive key names
-
-### 🎯 Deterministic Addressing
-
-Storage Program addresses are derived from:
-```
-address = stor-{SHA256(deployerAddress + programName + salt)}
-```
-
-This means you can:
-- Generate addresses client-side before creating programs
-- Share addresses with users before deployment
-- Create predictable, human-readable program names
-
-### ⚡ Efficient Operations
-
-- **Write operations**: Validated and applied via consensus
-- **Read operations**: Instant RPC queries (no transaction needed)
-- **Update operations**: Merge updates with existing data
-- **Delete operations**: Complete removal (deployer-only)
+- **Flexible access control**: Four modes cover private, collaborative, and public scenarios. See the [Access Control guide](./access-control.md) for details.
+- **Deterministic addressing**: `stor-` identifiers are derived from deployer inputs, so clients can pre-compute addresses before deployment.
+- **Consensus-backed writes**: Mutations are validated via consensus while reads are served instantly over RPC.
+- **Developer-friendly API**: High-level SDK helpers plus raw RPC endpoints give you control at the right abstraction.
+- **Predictable limits**: 128KB payload per program, 64 levels of nesting, 256 character keys.
 
 ## How Storage Programs Work
 
@@ -120,107 +92,7 @@ Storage Programs are stored in the `GCR_Main` table's `data` column (JSONB):
 
 ## Use Cases
 
-### 1. User Profiles and Settings
-
-Store user preferences, profile data, and application settings:
-
-```typescript
-// Create user profile storage
-const profileAddress = await demos.storageProgram.create(
-  "userProfile",
-  "private",
-  {
-    initialData: {
-      displayName: "Alice",
-      avatar: "ipfs://...",
-      preferences: {
-        theme: "dark",
-        language: "en"
-      }
-    }
-  }
-)
-```
-
-### 2. Shared State Management
-
-Coordinate state across multiple users with controlled access:
-
-```typescript
-// Game lobby with restricted access
-const lobbyAddress = await demos.storageProgram.create(
-  "gameLobby1",
-  "restricted",
-  {
-    allowedAddresses: [player1, player2, player3],
-    initialData: {
-      status: "waiting",
-      players: [],
-      settings: { maxPlayers: 4, gameMode: "classic" }
-    }
-  }
-)
-```
-
-### 3. Public Announcements
-
-Publish read-only data that anyone can access:
-
-```typescript
-// Project announcements
-const announcementsAddress = await demos.storageProgram.create(
-  "projectAnnouncements",
-  "public",
-  {
-    initialData: {
-      latest: "Latest release shipped!",
-      updates: []
-    }
-  }
-)
-```
-
-### 4. Configuration Management
-
-Store application configuration data:
-
-```typescript
-// App configuration
-const configAddress = await demos.storageProgram.create(
-  "appConfig",
-  "deployer-only",
-  {
-    initialData: {
-      apiEndpoints: ["https://api1.example.com", "https://api2.example.com"],
-      featureFlags: {
-        betaFeatures: false,
-        newUI: true
-      }
-    }
-  }
-)
-```
-
-### 5. Collaborative Documents
-
-Multiple users collaborating on shared data:
-
-```typescript
-// Shared document
-const docAddress = await demos.storageProgram.create(
-  "sharedDoc",
-  "restricted",
-  {
-    allowedAddresses: [user1, user2, user3],
-    initialData: {
-      title: "Project Proposal",
-      content: "",
-      lastEdit: Date.now(),
-      editors: []
-    }
-  }
-)
-```
+Looking for implementation-ready patterns? Jump to the [Storage Program Cookbook](../cookbook/storage-programs/examples.md) for end-to-end recipes covering announcements, team workspaces, user profiles, and more. This overview keeps the focus on concepts so each scenario has a single canonical home.
 
 ## Comparison with Other Storage Solutions
 

@@ -119,38 +119,14 @@ Reading data is **free** and doesn't require a transaction:
 ```typescript
 // Read all data
 const allData = await demos.storageProgram.read(storageAddress)
-console.log('All data:', allData.data)
-console.log('Metadata:', allData.metadata)
+console.log('All data:', allData.data.variables)
 
 // Read specific key
 const username = await demos.storageProgram.read(storageAddress, 'username')
 console.log('Username:', username)
 ```
 
-**Read Response Structure**:
-```typescript
-{
-  success: true,
-  data: {
-    variables: {
-      username: "alice",
-      email: "alice@example.com",
-      preferences: { theme: "dark", notifications: true },
-      bio: "Web3 developer...",
-      socialLinks: { twitter: "@alice_demos", github: "alice" }
-    },
-    metadata: {
-      programName: "myFirstProgram",
-      deployer: "0xabc123...",
-      accessControl: "private",
-      allowedAddresses: [],
-      created: 1706745600000,
-      lastModified: 1706745700000,
-      size: 2048
-    }
-  }
-}
-```
+Need more detail on pagination, caching, or response formats? The [RPC Queries guide](./rpc-queries.md) covers the full schema and performance advice.
 
 ## Complete Example
 
@@ -224,69 +200,11 @@ async function main() {
 main().catch(console.error)
 ```
 
-## Common Patterns
+## Where to Go Next
 
-### Creating Public Storage (Announcements)
-
-```typescript
-const announcementAddress = await demos.storageProgram.create(
-  "projectAnnouncements",
-  "public", // Anyone can read, only you can write
-  {
-    initialData: {
-      latest: "Latest release shipped!",
-      updates: [
-        { date: Date.now(), message: "Initial release" }
-      ]
-    }
-  }
-)
-```
-
-### Creating Restricted Storage (Team Collaboration)
-
-```typescript
-const teamStorage = await demos.storageProgram.create(
-  "teamWorkspace",
-  "restricted",
-  {
-    allowedAddresses: [
-      "0xteamMember1...",
-      "0xteamMember2...",
-      "0xteamMember3..."
-    ],
-    initialData: {
-      projectName: "DeFi Dashboard",
-      tasks: []
-    }
-  }
-)
-```
-
-### Updating Access Control
-
-```typescript
-// Add new team member to restricted storage
-await demos.storageProgram.updateAccessControl(
-  storageAddress,
-  {
-    allowedAddresses: [
-      "0xteamMember1...",
-      "0xteamMember2...",
-      "0xteamMember3...",
-      "0xnewMember..." // New member added
-    ]
-  }
-)
-
-// Change access mode
-await demos.storageProgram.updateAccessControl(
-  storageAddress,
-  {
-    accessControl: "public" // Change from restricted to public
-  }
-)
-```
+- Master permissions in the [Access Control guide](./access-control.md).
+- Dive deeper into each operation in the [Operations guide](./operations.md).
+- Explore practical recipes in the [Storage Program Cookbook](../cookbook/storage-programs/examples.md).
 
 ## Troubleshooting
 
