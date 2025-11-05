@@ -878,7 +878,7 @@ console.log('Stock levels:', report.stock)
 
 ## Next Steps
 
-- [API Reference](./api-reference.md) - Complete API documentation
-- [Access Control](./access-control.md) - Master permission systems
-- [RPC Queries](./rpc-queries.md) - Optimize data reading
-- [Operations](./operations.md) - Learn all CRUD operations
+- [API Reference](../../storage-programs/api-reference.md) - Complete API documentation
+- [Access Control](../../storage-programs/access-control.md) - Master permission systems
+- [RPC Queries](../../storage-programs/rpc-queries.md) - Optimize data reading
+- [Operations](../../storage-programs/operations.md) - Learn all CRUD operations
