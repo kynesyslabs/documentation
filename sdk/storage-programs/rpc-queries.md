@@ -6,14 +6,7 @@ Learn how to efficiently read data from Storage Programs using RPC queries.
 
 ## Overview
 
-Reading Storage Program data is **free** and **fast** because it uses RPC queries instead of blockchain transactions:
-
-| Feature | RPC Query | Blockchain Transaction |
-|---------|-----------|------------------------|
-| Cost | **Free** | Requires gas fee |
-| Speed | <100ms | ~2-5 seconds (consensus) |
-| Rate Limit | RPC provider dependent | Block production rate |
-| Use Case | Data reading | Data writing |
+Storage Program reads are served via RPC. They complete without a transaction, so there is no gas fee and responses typically arrive in under 100 ms. Writes still require consensus transactions; this guide focuses only on the read path.
 
 ## Basic RPC Queries
 

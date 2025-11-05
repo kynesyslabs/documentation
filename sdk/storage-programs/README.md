@@ -96,29 +96,6 @@ Storage Programs are stored in the `GCR_Main` table's `data` column (JSONB):
 
 Looking for implementation-ready patterns? Jump to the [Storage Program Cookbook](../cookbook/storage-programs/examples.md) for end-to-end recipes covering announcements, team workspaces, user profiles, and more. This overview keeps the focus on concepts so each scenario has a single canonical home.
 
-## Comparison with Other Storage Solutions
-
-### vs. Traditional Databases
-- ✅ **Decentralized**: No single point of failure
-- ✅ **Immutable history**: All changes recorded on blockchain
-- ✅ **Built-in access control**: No separate auth system needed
-- ❌ **Size limits**: 128KB per program (vs unlimited in traditional DBs)
-- ❌ **Write costs**: Transactions require consensus (vs instant writes)
-
-### vs. IPFS
-- ✅ **Mutable**: Update data without changing addresses
-- ✅ **Access control**: Built-in permission system
-- ✅ **Structured queries**: Read specific keys without downloading everything
-- ❌ **Size limits**: 128KB (vs unlimited in IPFS)
-- ❌ **Not free**: Writes require transactions (IPFS storage is pay-once)
-
-### vs. Smart Contract Storage
-- ✅ **Flexible structure**: No need to predefine schemas
-- ✅ **JSON-native**: Store complex nested objects easily
-- ✅ **Lower costs**: Optimized for data storage
-- ✅ **Simple API**: No Solidity/contract coding needed
-- ❌ **No logic**: Cannot execute code (pure storage)
-
 ## Core Concepts
 
 ### Address Derivation
