@@ -1,90 +1,50 @@
-# Storage Programs Overview
+# Storage Programs Architecture
 
-## Introduction
+Storage Programs are first-class key–value containers that live inside the Demos Network's Global Change Registry (GCR). This document describes how the network stores, validates, and serves Storage Program data so backend operators understand the moving pieces.
 
-Storage Programs are a powerful key-value storage solution built into the Demos Network, providing developers with decentralized, persistent data storage with flexible access control. Think of Storage Programs as smart, programmable databases that live on the blockchain with built-in permission systems.
+## Network Responsibilities
 
-## What are Storage Programs?
+- **Deterministic provisioning** – Addresses are derived from deployer metadata, allowing replicas to agree on identifiers before the program exists on-chain.
+- **Consensus validation** – Create, write, access-control updates, and delete operations are executed through the transaction pipeline and require consensus signatures.
+- **Immediate query availability** – The query subsystem can serve reads directly from the replicated database without waiting for block production.
+- **Permission enforcement** – Access rules are enforced server-side during both mutation and read paths, keeping unauthorized clients from observing private data.
 
-A Storage Program is a deterministic storage container that allows you to:
-
-- **Store arbitrary data**: Store any JSON-serializable data (objects, arrays, primitives)
-- **Control access**: Choose who can read and write your data
-- **Use deterministic addresses**: Predict storage addresses before creation
-- **Query efficiently**: Read data via RPC without transaction costs
-- **Update atomically**: All writes are atomic and consensus-validated
-
-## Key Features
-
-### 🔐 Flexible Access Control
-
-Choose from four access control modes:
-
-- **Private**: Only the deployer can read and write
-- **Public**: Anyone can read, only deployer can write (perfect for public announcements)
-- **Restricted**: Only deployer and whitelisted addresses can access
-- **Deployer-Only**: Explicit deployer-only mode
-
-### 📦 Generous Storage Limits
-
-- **128KB per Storage Program**: Store substantial amounts of structured data
-- **64 levels of nesting**: Deep object hierarchies supported
-- **256 character keys**: Descriptive key names
-
-### 🎯 Deterministic Addressing
-
-Storage Program addresses are derived from:
-```
-address = stor-{SHA256(deployerAddress + programName + salt)}
-```
-
-This means you can:
-- Generate addresses client-side before creating programs
-- Share addresses with users before deployment
-- Create predictable, human-readable program names
-
-### ⚡ Efficient Operations
-
-- **Write operations**: Validated and applied via consensus
-- **Read operations**: Instant RPC queries (no transaction needed)
-- **Update operations**: Merge updates with existing data
-- **Delete operations**: Complete removal (deployer-only)
-
-## How Storage Programs Work
-
-### Architecture
+## Data Flow
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Client Application                     │
-│  (Create, Write, Read, Update Access, Delete)            │
-└─────────────────────────┬───────────────────────────────┘
-                          │
-                ┌─────────┴─────────┐
-                │                   │
-          Write Operations    Read Operations (RPC)
-                │                   │
-                ▼                   ▼
-┌───────────────────────┐  ┌───────────────────────┐
-│  Transaction System   │  │    Query System       │
-│  (Consensus)          │  │    (Direct DB)        │
-└───────┬───────────────┘  └───────┬───────────────┘
-        │                          │
-        ▼                          ▼
-┌──────────────────────────────────────────────────┐
-│         Demos Network Global Chain Registry       │
-│                  (GCR Database)                   │
-│                                                   │
-│  GCR_Main.data = {                               │
-│    variables: { ...your data... },               │
-│    metadata: { programName, deployer, ... }      │
-│  }                                                │
-└──────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│               Client Applications            │
+│   (create, write, update access, delete)     │
+└─────────────────┬────────────────────────────┘
+                  │
+          ┌───────▼────────┐
+          │ Transaction    │   Mutations validated by consensus
+          │ Pipeline       │───────────────────────────────┐
+          └───────┬────────┘                               │
+                  │                                        │
+                  ▼                                        │
+        ┌────────────────────┐                             │
+        │  Consensus Layer   │                             │
+        └───────┬────────────┘                             │
+                │                                          │
+                ▼                                          │
+┌──────────────────────────────────────────────────────────┐
+│          Global Change Registry (PostgreSQL)             │
+│  Table: GCR_Main                                         │
+│  Column: data (JSONB)                                    │
+│  - variables: user payload                              │
+│  - metadata: deployer, access control, timestamps, etc. │
+└──────────────────────────────────────────────────────────┘
+                ▲                                          │
+                │                                          │
+        ┌───────┴────────┐                                 │
+        │ Query Service  │────────────── RPC READ ─────────┘
+        └────────────────┘
 ```
 
-### Data Storage
+## Persistence Model
 
-Storage Programs are stored in the `GCR_Main` table's `data` column (JSONB):
+Each Storage Program row is serialized into the `GCR_Main.data` JSONB column with two top-level objects:
 
 ```json
 {
@@ -108,246 +68,41 @@ Storage Programs are stored in the `GCR_Main` table's `data` column (JSONB):
 }
 ```
 
-## Use Cases
+- **variables** – Arbitrary JSON payload managed by the deployer.
+- **metadata** – Network-managed fields that clients can rely on for auditing and access checks.
 
-### 1. User Profiles and Settings
+## Deterministic Addressing
 
-Store user preferences, profile data, and application settings:
+Storage Program identifiers are derived on the client and verified by the network:
 
-```typescript
-// Create user profile storage
-const profileAddress = await demos.storageProgram.create(
-  "userProfile",
-  "private",
-  {
-    initialData: {
-      displayName: "Alice",
-      avatar: "ipfs://...",
-      preferences: {
-        theme: "dark",
-        language: "en"
-      }
-    }
-  }
-)
+```
+address = stor-{SHA256(deployerAddress + programName + salt)}
 ```
 
-### 2. Shared State Management
+Consensus nodes recompute the address during CREATE to guarantee uniqueness. Because the derivation is deterministic, clients can safely reference programs before they exist and the backend can reject collisions or mismatched inputs.
 
-Coordinate state across multiple users with controlled access:
+## Access Control Enforcement
 
-```typescript
-// Game lobby with restricted access
-const lobbyAddress = await demos.storageProgram.create(
-  "gameLobby1",
-  "restricted",
-  {
-    allowedAddresses: [player1, player2, player3],
-    initialData: {
-      status: "waiting",
-      players: [],
-      settings: { maxPlayers: 4, gameMode: "classic" }
-    }
-  }
-)
-```
+During transaction execution the validator layer enforces the configured mode:
 
-### 3. Public Announcements
+- **private / deployer-only** – Only the deploying address may create, read, or mutate data.
+- **public** – Anyone can issue read RPCs; only the deployer can commit writes.
+- **restricted** – Membership lists are stored in metadata and validated during both read and write phases.
 
-Publish read-only data that anyone can access:
+RPC handlers consult the same metadata before serving results, ensuring confidentiality even when requests originate outside the trusted perimeter.
 
-```typescript
-// Project announcements
-const announcementsAddress = await demos.storageProgram.create(
-  "projectAnnouncements",
-  "public",
-  {
-    initialData: {
-      latest: "Version 2.0 released!",
-      updates: []
-    }
-  }
-)
-```
+## Resource Limits
 
-### 4. Configuration Management
+To keep Storage Programs fast to replicate and query, the backend validates:
 
-Store application configuration data:
+- Maximum serialized payload of **128 KB** per program.
+- Maximum nesting depth of **64** JSON levels.
+- Maximum key length of **256** characters.
 
-```typescript
-// App configuration
-const configAddress = await demos.storageProgram.create(
-  "appConfig",
-  "deployer-only",
-  {
-    initialData: {
-      apiEndpoints: ["https://api1.example.com", "https://api2.example.com"],
-      featureFlags: {
-        betaFeatures: false,
-        newUI: true
-      }
-    }
-  }
-)
-```
+Requests exceeding these thresholds are rejected during consensus execution before they reach the data layer.
 
-### 5. Collaborative Documents
+## Related Guides
 
-Multiple users collaborating on shared data:
-
-```typescript
-// Shared document
-const docAddress = await demos.storageProgram.create(
-  "sharedDoc",
-  "restricted",
-  {
-    allowedAddresses: [user1, user2, user3],
-    initialData: {
-      title: "Project Proposal",
-      content: "",
-      lastEdit: Date.now(),
-      editors: []
-    }
-  }
-)
-```
-
-## Comparison with Other Storage Solutions
-
-### vs. Traditional Databases
-- ✅ **Decentralized**: No single point of failure
-- ✅ **Immutable history**: All changes recorded on blockchain
-- ✅ **Built-in access control**: No separate auth system needed
-- ❌ **Size limits**: 128KB per program (vs unlimited in traditional DBs)
-- ❌ **Write costs**: Transactions require consensus (vs instant writes)
-
-### vs. IPFS
-- ✅ **Mutable**: Update data without changing addresses
-- ✅ **Access control**: Built-in permission system
-- ✅ **Structured queries**: Read specific keys without downloading everything
-- ❌ **Size limits**: 128KB (vs unlimited in IPFS)
-- ❌ **Not free**: Writes require transactions (IPFS storage is pay-once)
-
-### vs. Smart Contract Storage
-- ✅ **Flexible structure**: No need to predefine schemas
-- ✅ **JSON-native**: Store complex nested objects easily
-- ✅ **Lower costs**: Optimized for data storage
-- ✅ **Simple API**: No Solidity/contract coding needed
-- ❌ **No logic**: Cannot execute code (pure storage)
-
-## Core Concepts
-
-### Address Derivation
-
-Storage Program addresses are **deterministic** and **predictable**:
-
-```typescript
-import { deriveStorageAddress } from '@kynesyslabs/demosdk/storage'
-
-// Generate address client-side
-const address = deriveStorageAddress(
-  deployerAddress,  // Your wallet address
-  programName,      // Unique name: "myApp"
-  salt             // Optional salt for uniqueness: "v1"
-)
-
-// Result: "stor-a1b2c3d4e5f6..." (45 characters)
-```
-
-**Format**: `stor-` + 40 hex characters
-
-### Operations Lifecycle
-
-1. **CREATE**: Initialize new storage program with optional data
-2. **WRITE**: Add or update key-value pairs (merges with existing data)
-3. **READ**: Query data via RPC (no transaction needed)
-4. **UPDATE_ACCESS_CONTROL**: Change access mode or allowed addresses (deployer only)
-5. **DELETE**: Remove entire storage program (deployer only)
-
-### Access Control Modes
-
-| Mode | Read Access | Write Access | Use Case |
-|------|-------------|--------------|----------|
-| **private** | Deployer only | Deployer only | Personal data, secrets |
-| **public** | Anyone | Deployer only | Announcements, public data |
-| **restricted** | Deployer + allowed | Deployer + allowed | Shared workspaces, teams |
-| **deployer-only** | Deployer only | Deployer only | Explicit private mode |
-
-### Storage Limits
-
-These limits ensure blockchain efficiency:
-
-```typescript
-const STORAGE_LIMITS = {
-  MAX_SIZE_BYTES: 128 * 1024,    // 128KB total
-  MAX_NESTING_DEPTH: 64,         // 64 levels of nested objects
-  MAX_KEY_LENGTH: 256            // 256 characters per key name
-}
-```
-
-**Size Calculation**:
-```typescript
-const size = new TextEncoder().encode(JSON.stringify(data)).length
-```
-
-## Security Considerations
-
-### Data Privacy
-
-- **Private/Deployer-Only modes**: Data is stored on blockchain but access-controlled
-- **Encryption recommended**: For sensitive data, encrypt before storing
-- **Public mode**: Anyone can read - never store secrets
-
-### Access Control
-
-- **Deployer verification**: All operations verify deployer signature
-- **Allowed addresses**: Restricted mode checks whitelist
-- **Admin operations**: Only deployer can update access or delete
-
-### Best Practices
-
-✅ **DO**:
-- Use descriptive program names for easy identification
-- Encrypt sensitive data before storing
-- Use public mode for truly public data
-- Test with small data first
-- Add salt for multiple programs with same name
-
-❌ **DON'T**:
-- Store private keys or secrets unencrypted
-- Exceed 128KB limit (transaction will fail)
-- Use deeply nested objects (>64 levels)
-- Store data that changes very frequently (high transaction costs)
-
-## Performance Characteristics
-
-### Write Operations
-- **Latency**: Consensus time (~2-5 seconds)
-- **Cost**: Transaction fee required
-- **Throughput**: Limited by block production
-- **Validation**: Full validation before inclusion
-
-### Read Operations
-- **Latency**: <100ms (direct database query)
-- **Cost**: Free (no transaction needed)
-- **Throughput**: Unlimited (RPC queries)
-- **Consistency**: Eventually consistent with blockchain state
-
-### Storage Efficiency
-- **Overhead**: ~200 bytes metadata per program
-- **Compression**: JSONB compression in PostgreSQL
-- **Indexing**: Efficient JSONB queries
-- **Scalability**: Horizontal scaling with database
-
-## Getting Started
-
-Ready to build with Storage Programs? Head to the [Getting Started](./getting-started.md) guide for your first Storage Program.
-
-## Next Steps
-
-- [Getting Started](./getting-started.md) - Create your first Storage Program
-- [Operations](./operations.md) - Learn all CRUD operations
-- [Access Control](./access-control.md) - Master permission systems
-- [RPC Queries](./rpc-queries.md) - Efficiently read data
-- [Examples](./examples.md) - Practical code examples
-- [API Reference](./api-reference.md) - Complete API documentation
+- Developer-first overview: [SDK Storage Programs](../../sdk/storage-programs/README.md)
+- Implementation recipes: [Storage Program Cookbook](../../sdk/cookbook/storage-programs/README.md)
+- Client operations: [SDK Operations Guide](../../sdk/storage-programs/operations.md)

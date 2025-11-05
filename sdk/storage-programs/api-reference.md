@@ -867,9 +867,7 @@ const result = await demos.storageProgram.read(addr)
 
 ---
 
-## Version History
-
-### SDK Version 2.4.20
+## Feature Summary
 
 - Initial Storage Programs implementation
 - CREATE, WRITE, READ, UPDATE_ACCESS_CONTROL, DELETE operations
@@ -886,5 +884,5 @@ const result = await demos.storageProgram.read(addr)
 - [Operations Guide](./operations.md)
 - [Access Control Guide](./access-control.md)
 - [RPC Queries Guide](./rpc-queries.md)
-- [Examples](./examples.md)
-- [Overview](./overview.md)
+- [Examples](../cookbook/storage-programs/examples.md)
+- [Overview](./README.md)

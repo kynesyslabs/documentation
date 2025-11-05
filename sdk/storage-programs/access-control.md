@@ -684,5 +684,5 @@ if (myAddress !== metadata.deployer) {
 ## Next Steps
 
 - [RPC Queries](./rpc-queries.md) - Optimize read operations with access control
-- [Examples](./examples.md) - Real-world access control patterns
+- [Examples](../cookbook/storage-programs/examples.md) - Real-world access control patterns
 - [API Reference](./api-reference.md) - Complete API documentation

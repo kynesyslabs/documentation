@@ -665,6 +665,6 @@ async function timedRead(addr: string, key?: string) {
 
 ## Next Steps
 
-- [Examples](./examples.md) - Real-world query patterns and use cases
+- [Examples](../cookbook/storage-programs/examples.md) - Real-world query patterns and use cases
 - [API Reference](./api-reference.md) - Complete API documentation
 - [Operations Guide](./operations.md) - Learn about write operations

@@ -731,5 +731,5 @@ async function safeDelete(storageAddress: string) {
 
 - [Access Control Guide](./access-control.md) - Deep dive into permission systems
 - [RPC Queries](./rpc-queries.md) - Optimize read operations
-- [Examples](./examples.md) - Real-world implementation patterns
+- [Examples](../cookbook/storage-programs/examples.md) - Real-world implementation patterns
 - [API Reference](./api-reference.md) - Complete API documentation

@@ -4,19 +4,15 @@ This guide will walk you through creating your first Storage Program on Demos Ne
 
 ## Prerequisites
 
-- Node.js 18+ or Bun installed
-- Demos Network SDK installed: `@kynesyslabs/demosdk`
+- Bun (latest) installed
+- Demos Network SDK: `@kynesyslabs/demosdk`
 - A Demos wallet with some balance for transaction fees
 - Connection to a Demos Network RPC node
 
 ## Installation
 
 ```bash
-# Using npm
-npm install @kynesyslabs/demosdk
-
-# Using bun
-bun add @kynesyslabs/demosdk
+bun add --latest @kynesyslabs/demosdk
 ```
 
 ## Your First Storage Program
@@ -238,7 +234,7 @@ const announcementAddress = await demos.storageProgram.create(
   "public", // Anyone can read, only you can write
   {
     initialData: {
-      latest: "Version 2.0 released!",
+      latest: "Latest release shipped!",
       updates: [
         { date: Date.now(), message: "Initial release" }
       ]
@@ -439,7 +435,7 @@ Now that you've created your first Storage Program, explore:
 - [Operations Guide](./operations.md) - Learn all CRUD operations in detail
 - [Access Control](./access-control.md) - Master permission systems
 - [RPC Queries](./rpc-queries.md) - Efficient data reading patterns
-- [Examples](./examples.md) - Practical real-world examples
+- [Examples](../cookbook/storage-programs/examples.md) - Practical real-world examples
 - [API Reference](./api-reference.md) - Complete API documentation
 
 ## Quick Reference
