@@ -1,5 +1,7 @@
 # RPC Queries Guide
 
+> **Warning**: Storage Programs are still being developed; this documentation is a preview and might not work correctly.
+
 Learn how to efficiently read data from Storage Programs using RPC queries.
 
 ## Overview
