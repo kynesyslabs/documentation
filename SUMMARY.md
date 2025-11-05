@@ -80,13 +80,6 @@
 * [Post Quantum Cryptography](sdk/post-quantum-cryptography.md)
 
 ## Backend
-* [Storage Programs Overview](backend/storage-programs/README.md)
-  * [Access Control Guide](backend/storage-programs/access-control.md)
-  * [Storage Programs API Reference](backend/storage-programs/api-reference.md)
-  * [Storage Programs Examples](backend/storage-programs/examples.md)
-  * [Getting Started with Storage Programs](backend/storage-programs/getting-started.md)
-  * [Storage Program Operations](backend/storage-programs/operations.md)
-  * [RPC Queries Guide](backend/storage-programs/rpc-queries.md)
 
 * [Internal Mechanisms](backend/internal-mechanisms/README.md)
   * [Network Time Synchronization](backend/internal-mechanisms/network-time-synchronization.md)
@@ -102,6 +95,13 @@
   * [Addressing Potential Criticisms](backend/consensus-mechanism/addressing-potential-criticisms.md)
   * [Conclusion](backend/consensus-mechanism/conclusion.md)
 * [Communications Stack](backend/communications-stack.md)
+* [Storage Programs Overview](backend/storage-programs/README.md)
+  * [Access Control Guide](backend/storage-programs/access-control.md)
+  * [Storage Programs API Reference](backend/storage-programs/api-reference.md)
+  * [Storage Programs Examples](backend/storage-programs/examples.md)
+  * [Getting Started with Storage Programs](backend/storage-programs/getting-started.md)
+  * [Storage Program Operations](backend/storage-programs/operations.md)
+  * [RPC Queries Guide](backend/storage-programs/rpc-queries.md)
 * [L2PS (Subnet) Framework](backend/l2ps-subnet-framework/README.md)
   * [How are L2PS transactions handled?](backend/l2ps-subnet-framework/how-are-l2ps-transactions-handled.md)
 * [MCP Server](backend/mcp-server/README.md)
