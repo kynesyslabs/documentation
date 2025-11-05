@@ -17,7 +17,7 @@ The Telegram flow differs from GitHub / Twitter because it involves an authorize
 
 ### Telegram Bot Overview
 
-Flow: Telegram Login Widget → dApp → Bot verification endpoint (no deep links or chat commands).
+Flow: dApp → Telegram Bot (verification with commands) -> Verification on dApp.
 
 The Telegram bot (or a verification microservice) acts as an attestation authority. It must:
 
@@ -31,15 +31,13 @@ Only the widget-based REST flow is covered here.
 
 #### Minimal Bot Environment Variables
 
-| Variable              | Purpose                                 | Example                  |
-| --------------------- | --------------------------------------- | ------------------------ |
-| `BOT_TOKEN`           | Telegram Bot API token                  | `123456:ABCDEF...`       |
-| `GENESIS_PRIVATE_KEY` | Bot Ed25519 private key (hex, 64 bytes) | `0x...`                  |
-| `GENESIS_PUBLIC_KEY`  | Bot public key whitelisted in genesis   | `0x...`                  |
-| `NODE_URL`            | Demos node base URL                     | `http://127.0.0.1:53550` |
-| `WEBHOOK_DOMAIN`      | Public domain (no protocol)             | `abcd.ngrok-free.app`    |
-| `WEBHOOK_PATH`        | Webhook path                            | `/telegram-webhook`      |
-| `PORT`                | Bot server port                         | `8787`                   |
+| Variable              | Purpose                                 | Example                   |
+| --------------------- | --------------------------------------- | ------------------------- |
+| `BOT_TOKEN`           | Telegram Bot API token                  | `123456:ABCDEF...`        |
+| `GENESIS_PRIVATE_KEY` | Bot Ed25519 private key (hex, 64 bytes) | `0x...`                   |
+| `GENESIS_PUBLIC_KEY`  | Bot public key whitelisted in genesis   | `0x...`                   |
+| `NODE_URL`            | Demos node base URL                     | `http://127.0.0.1:53550`  |
+| `BOT_USERNAME`        | Telegram Bot Username                   | `yourTelegramBotUsername` |
 
 #### Attestation Signing Logic (Core `attest` Function)
 
@@ -109,7 +107,7 @@ const GENESIS_PRIVATE_KEY = process.env.GENESIS_PRIVATE_KEY!.replace(/^0x/,'')
 const GENESIS_PUBLIC_KEY = process.env.GENESIS_PUBLIC_KEY!
 const NODE_URL = process.env.NODE_URL || 'http://127.0.0.1:53550'
 
-function verifyTelegramAuth(auth: any) {
+function  (auth: any) {
   const { hash, ...rest } = auth
   const dataCheckString = Object.keys(rest).sort().map(k => `${k}=${rest[k]}`).join('\n')
   const secretKey = crypto.createHash('sha256').update(BOT_TOKEN).digest()
@@ -130,18 +128,6 @@ async function callVerify(telegramUser: any, signedChallenge: string) {
   if(!j.success) throw new Error(j.error || 'verify_failed')
   return j
 }
-
-app.post('/webhook/verification', async (req,res) => {
-  try {
-    const { telegramUser, signedChallenge } = req.body || {}
-    if(!telegramUser || !signedChallenge) return res.status(400).json({ success:false, error:'Missing telegramUser or signedChallenge' })
-    if(!verifyTelegramAuth(telegramUser)) return res.status(401).json({ success:false, error:'Invalid telegram auth hash' })
-    const result = await callVerify(telegramUser, signedChallenge)
-    res.json({ success:true, unsignedTransaction: result.unsignedTransaction })
-  } catch(e:any){
-    res.status(500).json({ success:false, error: e.message })
-  }
-})
 
 app.listen(8787, () => console.log('Verification service listening on :8787'))
 ```
@@ -195,23 +181,7 @@ console.log("Address:", demos.wallet.address);
 
 ### 2. Obtain a one‑time challenge
 
-Request a challenge from the node. This binds a timestamp + nonce to your wallet address and prevents replay attacks.
-
-```ts
-async function getChallenge(nodeUrl: string, address: string) {
-  const r = await fetch(`${nodeUrl}/api/tg-challenge`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ demos_address: address })
-  });
-  if(!r.ok) throw new Error('Challenge HTTP ' + r.status);
-  const j = await r.json();
-  return j.challenge; // Format: DEMOS_TG_BIND_<address>_<timestamp>_<nonce>
-}
-
-const challenge = await getChallenge(rpc, demos.wallet.address);
-console.log('Challenge:', challenge);
-```
+Open the telegram bot on your telegram app, and get the challenge by writing <mark style="color:$primary;">/link</mark> command.
 
 ***
 
@@ -229,33 +199,9 @@ Never reuse a challenge. If the user abandons the flow, discard it and request a
 
 ### 4. Authenticate the user with the Telegram Login Widget
 
-Embed the official widget (or open a window) to obtain the user’s Telegram auth payload.
-
-```html
-<script async src="https://telegram.org/js/telegram-widget.js?22"
-        data-telegram-login="YOUR_BOT_USERNAME"
-        data-size="large"
-        data-onauth="onTelegramAuth(user)"
-        data-request-access="write"></script>
-<script>
-  function onTelegramAuth(user){
-    // Forward 'user' (Telegram auth payload) to your application logic
-    window.dispatchEvent(new CustomEvent('telegram-auth', { detail: user }))
-  }
-</script>
-```
-
-In your app (React example):
-
-```ts
-useEffect(() => {
-  const handler = (e: any) => handleTelegramAuth(e.detail);
-  window.addEventListener('telegram-auth', handler);
-  return () => window.removeEventListener('telegram-auth', handler);
-}, []);
-```
-
-Security: The widget payload contains a `hash` you should verify server‑side (HMAC with your bot token) if you do not fully trust the client.&#x20;
+Send the authentication payload to the telegram bot as message like this format\
+\<signature publicKey>\
+where signature will be signed challenge which gave the bot, and the public key, will be your wallet public key.
 
 ### 5. Check telegram channel membership
 
@@ -450,14 +396,6 @@ Stages emitted:
 | Attestation (bot) | Bot           | Build unsigned tx        | Bot key authorized in genesis   |
 | Sign & broadcast  | Wallet + Node | Record identity on-chain | Node validates all proofs       |
 
-#### Verification Service Endpoint Summary
-
-| Endpoint                            | Purpose                                                     |
-| ----------------------------------- | ----------------------------------------------------------- |
-| `POST /webhook/verification`        | Accept Telegram auth + signed challenge, return unsigned tx |
-| `POST /api/telegram/verify` (proxy) | Public backend relay to internal verification service       |
-| `GET /health` (optional)            | Liveness / monitoring                                       |
-
 ***
 
 ### Environment Variables (Frontend Example)
@@ -468,9 +406,6 @@ Stages emitted:
 | `VITE_TELEGRAM_BOT_SERVER_URL` | Your bot verification endpoint | `https://your-bot.example.com` |
 | `VITE_TELEGRAM_BOT_USERNAME`   | Bot username (for widget)      | `demos_prod_bot`               |
 | `VITE_FRONTEND_URL`            | Public origin hosting widget   | `https://app.example.com`      |
-| `VITE_BOT_URL`                 | (Optional) Bot deep link       | `https://t.me/demos_prod_bot`  |
-
-Widget & webhook endpoints must be HTTPS and publicly reachable. Register your domain with BotFather (`/setdomain`) and set a webhook via the Bot API if you process updates server-side.
 
 ***
 
@@ -497,38 +432,45 @@ Widget & webhook endpoints must be HTTPS and publicly reachable. Register your d
 
 ### Minimal UI Flow (Conceptual)
 
-1. User clicks “Link Telegram” → fetch + sign challenge
-2. Telegram widget opens → returns auth payload
-3. Send (telegramUser + signedChallenge) to bot → receive unsignedTx
-4. Prompt user to sign identity transaction → broadcast
-5. Show confirmation (tx hash + linked username)
+1. User clicks “Link Telegram”
+2. UI must tell user to open the telegram bot
+3. Place where user user can paste and sign the chalange from the bot
+4. Show confirmation (tx hash + linked username)
 
 ***
 
 ### Complete Flow Diagram
 
 ```
-Wallet (User)      dApp Frontend          Telegram Bot            Demos Node
-     |                   |                      |                      |
-     |  connectWallet    |                      |                      |
-     |------------------>|                      |                      |
-     |                   | POST /api/tg-challenge                      |
-     |                   |---------------------->|                      |
-     |                   |<----- challenge ------|                      |
- sign challenge          |                      |                      |
-     |                   |                      |                      |
-     |  Telegram Widget auth (user)             |                      |
-     |------------------>(payload)              |                      |
-     |                   | POST /webhook/verification (user,payload,signedChallenge)
-     |                   |------------------------------------------->|
-     |                   |                      |  /api/tg-verify     |
-     |                   |                      |-------------------->|
-     |                   |                      |<-- unsigned tx -----|
-     |                   |<-- unsigned tx ------|                      |
-     |  signTransaction  |                      |                      |
-     |------------------>| demos.confirm + broadcast ----------------->|
-     |                   |                      |<-- success/receipt --|
-     |<-- tx hash -------|                      |                      |
+User             | Web App           | Telegram Modal     | Demos Wallet      | Telegram Bot      | Backend
+-----------------|------------------|------------------|-----------------|-----------------|-----------------
+Click "Start Telegram Verification"
+                 |-> Open modal
+                 |----------------->|
+                 |                  | Show instructions to get challenge
+Show instructions|<-----------------|
+Request challenge|-------------------------------------------------> Telegram Bot
+                 |                  |                  |                  |-> generateTelegramChallenge(address)
+                 |                  |                  |                  |-----------------> Backend
+                 |                  |                  |                  |<----------------- {challenge, expiresAt}
+Display challenge|<------------------------------------------------- Telegram Bot
+Paste challenge  |-> Telegram Modal
+                 |----------------->|-> signMessage(challenge)
+                 |                  |<----------------- signature
+Provide signature|-> Web App
+                 |----------------->|
+Consume challenge|-> Backend
+                 |----------------->|
+Valid & unused   |                  |                  |                  |                  |<-- true
+Refresh address  |-> Web App refresh info (hasTelegramIdentity)
+Verification complete
+                 |<-----------------| Telegram Modal
+Success & auto-close
+                 |<-----------------| Telegram Modal
+Invalid/expired/used
+                 |                  |                  |                  |                  |<-- false
+Error & retry    |<-----------------| Telegram Modal
+
 ```
 
 ***
