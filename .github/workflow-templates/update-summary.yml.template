@@ -1,0 +1,49 @@
+name: Update SUMMARY.md
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - '**.md'
+      - '!SUMMARY.md'
+  workflow_dispatch:
+
+jobs:
+  update-summary:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Generate SUMMARY.md
+        run: python .github/scripts/generate_summary.py
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if git diff --quiet SUMMARY.md; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push changes
+        if: steps.check_changes.outputs.changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add SUMMARY.md
+          git commit -m "chore: auto-update SUMMARY.md [skip ci]"
+          git push

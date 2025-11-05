@@ -80,6 +80,13 @@
 * [Post Quantum Cryptography](sdk/post-quantum-cryptography.md)
 
 ## Backend
+* [Storage Programs Overview](backend/storage-programs/README.md)
+  * [Access Control Guide](backend/storage-programs/access-control.md)
+  * [Storage Programs API Reference](backend/storage-programs/api-reference.md)
+  * [Storage Programs Examples](backend/storage-programs/examples.md)
+  * [Getting Started with Storage Programs](backend/storage-programs/getting-started.md)
+  * [Storage Program Operations](backend/storage-programs/operations.md)
+  * [RPC Queries Guide](backend/storage-programs/rpc-queries.md)
 
 * [Internal Mechanisms](backend/internal-mechanisms/README.md)
   * [Network Time Synchronization](backend/internal-mechanisms/network-time-synchronization.md)
