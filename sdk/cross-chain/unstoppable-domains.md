@@ -1,5 +1,5 @@
 ---
-icon: circle
+icon: globe
 ---
 
 # Unstoppable Domains
@@ -18,7 +18,7 @@ const demos = new Demos();
 await demos.connect("https://demosnode.discus.sh");
 
 // Connect wallet
-const mnemonic = demos.newMnenonic();
+const mnemonic = demos.newMmenonic();
 await demos.connectWallet(mnemonic);
 console.log("Demos Address:", demos.getEd25519Address());
 ```
@@ -95,16 +95,16 @@ const validityData = await identities.addUnstoppableDomainIdentity(
   resolutionData
 );
 
-console.log("Validity Data:", JSON.stringify(validityData, null, 200));
+console.log("Validity Data:", JSON.stringify(validityData, null, 2));
 
 // Broadcast validity data to apply transaction
 if (validityData.result === 200) {
   const res = await demos.broadcast(validityData);
-  console.log("Broadcast result:", JSON.stringify(res, null, 200));
+  console.log("Broadcast result:", JSON.stringify(res, null, 2));
 }
 ```
 
-The `addUnstoppableDomainIdentity` uses the connected crosschain wallet to create a proof of ownership payload, then sends the payload to the Demos RPC for verification.
+The `addUnstoppableDomainIdentity` uses the connected cross-chain wallet to create a proof of ownership payload, then sends the payload to the Demos RPC for verification.
 
 ## Getting Connected UD Domains
 
