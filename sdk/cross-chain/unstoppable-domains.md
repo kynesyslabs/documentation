@@ -1,5 +1,5 @@
 ---
-icon: globe
+icon: circle
 ---
 
 # Unstoppable Domains
@@ -11,7 +11,7 @@ icon: globe
 Initialize a new `Demos` class instance to communicate with the Demos Network:
 
 ```typescript
-import { Demos } from "@kynesyslabs/websdk";
+import { Demos } from "@kynesyslabs/demosdk/websdk";
 
 // Connect to Demos RPC
 const demos = new Demos();
@@ -46,7 +46,7 @@ You can use the domain owner address or any of the addresses added as records to
 Lookup your domain and fetch its metadata:
 
 ```typescript
-import { Identities } from "@kynesyslabs/abstraction";
+import { Identities } from "@kynesyslabs/demosdk/abstraction";
 const identities = new Identities();
 
 // Replace with your domain
