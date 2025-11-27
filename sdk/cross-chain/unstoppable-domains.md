@@ -38,7 +38,7 @@ console.log("ETH address: ", evm.getAddress());
 ```
 
 {% hint style="info" %}
-You can use the domain owner address or any of the addresses added as records to sign the proof of ownership payload. You can sign using any of the [supported chains](./README.md#supported-blockchains).
+You can use the domain owner address or any of the addresses added as records to sign the proof of ownership payload. You can sign using any of the [supported chains](sdk/cross-chain#supported-blockchains).
 {% endhint %}
 
 ## Resolve UD Domain
