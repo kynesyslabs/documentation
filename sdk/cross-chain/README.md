@@ -19,10 +19,10 @@ Here is a list of blockchains supported by DEMOS:
 2. [MultiversX](multiversx-egld.md)
 3. [Solana](solana.md)
 4. [IBC networks](ibc.md)
-5. Bitcoin
+5. [Bitcoin](btc.md)
 6. [TEN.xyz](ten.md)
 7. [TON](ton.md)
 8. [XRPL](xrpl.md)
 9. [NEAR](near.md)
 10. Sui
-11. Aptos
+11. [Aptos](aptos.md)
