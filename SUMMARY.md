@@ -13,6 +13,7 @@
     * [Run the project (Ubuntu)](cookbook/project-setup/run-the-project-ubuntu.md)
 
 ## SDK
+  * [Unstoppable Domains](sdk/cross-chain/unstoppable-domains.md)
 
 * [Getting Started](sdk/getting-started.md)
 * [WebSDK](sdk/websdk/README.md)
