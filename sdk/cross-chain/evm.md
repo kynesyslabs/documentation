@@ -126,14 +126,14 @@ await instance.writeToContract(contract, "functionName", [arg1, arg2])
 You can listen for specific event from a contract as shown:
 
 ```ts
-const eventData = await instance.listenForEvent(
-    contractAddress,
-    abi,
-    "EventName",
-    timeout
-);
-
 try {
+    const eventData = await instance.listenForEvent(
+        contractAddress,
+        abi,
+        "EventName",
+        timeout
+    );
+
     console.log("event data:", eventData)
     // use eventData here
 } catch {
