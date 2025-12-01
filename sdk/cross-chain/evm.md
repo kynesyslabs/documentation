@@ -128,7 +128,7 @@ You can listen for specific event from a contract as shown:
 ```ts
 const eventData = await instance.listenForEvent(
     contractAddress,
-    abi
+    abi,
     "EventName",
     timeout
 );
