@@ -19,18 +19,18 @@ To interact with EVM-compatible chains, you'll need a wallet with a private key.
 
 For testing purposes, you can use faucets to get testnet tokens. For example, for Sepolia testnet:
 
-* [Alchemy Sepolia Faucet](https://sepoliafaucet.com/)
-* [Chainlink Sepolia Faucet](https://faucets.chain.link/sepolia)
+- [Alchemy Sepolia Faucet](https://sepoliafaucet.com/)
+- [Chainlink Sepolia Faucet](https://faucets.chain.link/sepolia)
 
 ### Initialization
 
 Import the SDK and create a new instance:
 
 ```ts
-import { EVM } from "@kynesyslabs/demosdk/xm-websdk"
+import { EVM } from "@kynesyslabs/demosdk/xm-websdk";
 
-const rpc_url = "https://sepolia.infura.io/v3/YOUR-PROJECT-ID"
-const instance = await EVM.create(rpc_url)
+const rpc_url = "https://sepolia.infura.io/v3/YOUR-PROJECT-ID";
+const instance = await EVM.create(rpc_url);
 ```
 
 ### Connecting your wallet
@@ -38,15 +38,15 @@ const instance = await EVM.create(rpc_url)
 To create signed transaction payloads, you need to connect your wallet to the SDK:
 
 ```ts
-const privateKey = "0x1234567890abcdef..." // Your private key
-await instance.connectWallet(privateKey)
+const privateKey = "0x1234567890abcdef..."; // Your private key
+await instance.connectWallet(privateKey);
 ```
 
 You can view the address of your connected wallet using the `getAddress` method:
 
 ```ts
-const address = instance.getAddress()
-console.log(`Address: ${address}`)
+const address = instance.getAddress();
+console.log(`Address: ${address}`);
 ```
 
 ### Creating a token transfer payload
@@ -54,9 +54,9 @@ console.log(`Address: ${address}`)
 To create a signed transaction payload to transfer ETH, you can use the `preparePay` method:
 
 ```ts
-const recipientAddress = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
-const amount = "0.1" // Amount in ETH
-const signedTx = await instance.preparePay(recipientAddress, amount)
+const recipientAddress = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e";
+const amount = "0.1"; // Amount in ETH
+const signedTx = await instance.preparePay(recipientAddress, amount);
 ```
 
 The `signedTx` is a signed transaction that can be used a DEMOS transaction.
@@ -67,10 +67,10 @@ You can prepare multiple signed transaction payloads at once using the `prepareP
 
 ```ts
 const transfers = [
-    { address: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e", amount: "0.1" },
-    { address: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e", amount: "0.2" },
-]
-const signedTxs = await instance.preparePays(transfers)
+  { address: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e", amount: "0.1" },
+  { address: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e", amount: "0.2" },
+];
+const signedTxs = await instance.preparePays(transfers);
 ```
 
 The `signedTxs` is an array of signed transaction payloads that can be used in a DEMOS transaction.
@@ -81,27 +81,27 @@ You can check the balance of an address using the `getBalance` method:
 
 ```ts
 const balance = await instance.getBalance(
-    "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
-)
-console.log(`Balance: ${balance} ETH`)
+  "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+);
+console.log(`Balance: ${balance} ETH`);
 ```
 
 ### Signing messages
 
 ```javascript
-const message = "Hello, world!"
+const message = "Hello, world!";
 
 // signing
-const signature = await instance.signMessage(message)
+const signature = await instance.signMessage(message);
 
 // verifying signature
 const verified = await instance.verifyMessage(
-    message,
-    signature,
-    instance.getAddress(),
-)
+  message,
+  signature,
+  instance.getAddress()
+);
 
-expect(verified).toBe(true)
+expect(verified).toBe(true);
 ```
 
 ### Working with smart contracts
@@ -121,24 +121,54 @@ const result = await instance.readFromContract(contract, "functionName", [arg1, 
 await instance.writeToContract(contract, "functionName", [arg1, arg2])
 ```
 
-### Listening for events (Not implemented)
+### Listening for events
 
-You can listen for specific events or all events from a contract:
+You can listen for specific event from a contract as shown:
 
 ```ts
-// Listen for a specific event
-instance.listenForEvent("EventName", contractAddress, abi)
+const eventData = await instance.listenForEvent(
+    contractAddress,
+    abi
+    "EventName",
+    timeout
+);
+
+try {
+    console.log("event data:", eventData)
+    // use eventData here
+} catch {
+    console.error("something went wrong", error)
+    // do something else here
+}
+```
+
+You can listen for any events from a contract as shown below:
+
+```ts
+// define the callback to process events
+function callback(eventData: any) {
+    console.log("event data:", eventData);
+}
 
 // Listen for all events
-instance.listenForAllEvents(contractAddress, abi)
+const removeListener = instance.listenForAllEvents(
+    contractAddress,
+    abi,
+    callback
+);
+
+// when you're done, remove the listener
+removeListener();
 ```
+
+The `listenForAllEvents` does not accept a `timeout` parameter, but it returns a function you can use to stop listening for events. Call the `removeListener` method to stop listening for events.
 
 ### Cleaning up
 
 To disconnect your wallet and clean up resources, you can use the `disconnect` method:
 
 ```ts
-await instance.disconnect()
+await instance.disconnect();
 ```
 
 ### Advanced usage
@@ -155,7 +185,7 @@ For more advanced use cases, you can access underlying properties and methods of
 You can use these properties and methods to perform custom operations:
 
 ```ts
-const blockNumber = await instance.provider.getBlockNumber()
+const blockNumber = await instance.provider.getBlockNumber();
 ```
 
 ### API Reference
@@ -164,8 +194,8 @@ const blockNumber = await instance.provider.getBlockNumber()
 
 ### Resources
 
-* [Ethereum Website](https://ethereum.org)
-* [Ethers.js Documentation](https://docs.ethers.org/v6/)
-* [MetaMask](https://metamask.io/)
-* [Ethereum Block Explorer (Mainnet)](https://etherscan.io/)
-* [Sepolia Block Explorer](https://sepolia.etherscan.io/)
+- [Ethereum Website](https://ethereum.org)
+- [Ethers.js Documentation](https://docs.ethers.org/v6/)
+- [MetaMask](https://metamask.io/)
+- [Ethereum Block Explorer (Mainnet)](https://etherscan.io/)
+- [Sepolia Block Explorer](https://sepolia.etherscan.io/)
