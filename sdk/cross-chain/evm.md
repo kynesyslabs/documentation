@@ -161,7 +161,7 @@ const removeListener = instance.listenForAllEvents(
 removeListener();
 ```
 
-The `listenForAllEvents` does not accept a `timeout` parameter, but it returns a function you can use to stop listening for events. Call the `removeListener` method to stop listening for events.
+The `listenForAllEvents` method does not accept a `timeout` parameter, but it returns a function that you can use to stop listening for events. Call it to remove the event listener.
 
 ### Cleaning up
 
