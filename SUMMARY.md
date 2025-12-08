@@ -14,6 +14,8 @@
 
 ## SDK
   * [Unstoppable Domains](sdk/cross-chain/unstoppable-domains.md)
+* [Identities](sdk/cross-chain/identities/README.md)
+  * [Unstoppable Domains](sdk/cross-chain/identities/unstoppable-domains.md)
 
 * [Getting Started](sdk/getting-started.md)
 * [WebSDK](sdk/websdk/README.md)
