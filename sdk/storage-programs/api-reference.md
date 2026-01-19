@@ -305,6 +305,589 @@ console.log('Storage program deleted')
 
 ---
 
+## Granular Write Methods
+
+These methods provide field-level modifications without replacing the entire dataset.
+
+---
+
+### setField()
+
+Set or update a top-level field value.
+
+#### Signature
+
+```typescript
+async setField(
+  storageAddress: string,
+  field: string,
+  value: any
+): Promise<StorageProgramWriteResult>
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `storageAddress` | `string` | ✅ | Storage Program address (stor-...) |
+| `field` | `string` | ✅ | Field name to set |
+| `value` | `any` | ✅ | Value to assign |
+
+#### Example
+
+```typescript
+// Set a single field
+await demos.storageProgram.setField(
+  "stor-abc123...",
+  "theme",
+  "dark"
+)
+
+// Set a complex value
+await demos.storageProgram.setField(
+  "stor-abc123...",
+  "settings",
+  { language: "en", notifications: true }
+)
+```
+
+#### Errors
+
+- **403**: Access denied (not deployer or allowed)
+- **400**: Combined size exceeds 128KB limit
+- **404**: Storage program not found
+
+---
+
+### setItem()
+
+Update an array element at a specific index.
+
+#### Signature
+
+```typescript
+async setItem(
+  storageAddress: string,
+  field: string,
+  index: number,
+  value: any
+): Promise<StorageProgramWriteResult>
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `storageAddress` | `string` | ✅ | Storage Program address |
+| `field` | `string` | ✅ | Array field name |
+| `index` | `number` | ✅ | Zero-based array index |
+| `value` | `any` | ✅ | Value to set at index |
+
+#### Example
+
+```typescript
+// Update first post in posts array
+await demos.storageProgram.setItem(
+  "stor-abc123...",
+  "posts",
+  0,
+  { title: "Updated Title", content: "New content" }
+)
+```
+
+#### Errors
+
+- **400**: Field is not an array
+- **400**: Index out of bounds
+- **403**: Access denied
+- **404**: Storage program not found
+
+---
+
+### appendItem()
+
+Append an item to an array field.
+
+#### Signature
+
+```typescript
+async appendItem(
+  storageAddress: string,
+  field: string,
+  value: any
+): Promise<StorageProgramWriteResult>
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `storageAddress` | `string` | ✅ | Storage Program address |
+| `field` | `string` | ✅ | Array field name |
+| `value` | `any` | ✅ | Value to append |
+
+#### Example
+
+```typescript
+// Add a new post to posts array
+await demos.storageProgram.appendItem(
+  "stor-abc123...",
+  "posts",
+  { title: "New Post", content: "Hello World", createdAt: Date.now() }
+)
+```
+
+#### Errors
+
+- **400**: Field is not an array
+- **400**: Combined size exceeds 128KB limit
+- **403**: Access denied
+- **404**: Storage program not found
+
+---
+
+### deleteField()
+
+Remove a top-level field entirely.
+
+#### Signature
+
+```typescript
+async deleteField(
+  storageAddress: string,
+  field: string
+): Promise<StorageProgramWriteResult>
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `storageAddress` | `string` | ✅ | Storage Program address |
+| `field` | `string` | ✅ | Field name to delete |
+
+#### Example
+
+```typescript
+// Remove temporary data field
+await demos.storageProgram.deleteField(
+  "stor-abc123...",
+  "tempData"
+)
+```
+
+#### Errors
+
+- **400**: Field does not exist
+- **403**: Access denied
+- **404**: Storage program not found
+
+---
+
+### deleteItem()
+
+Remove an array element at a specific index.
+
+#### Signature
+
+```typescript
+async deleteItem(
+  storageAddress: string,
+  field: string,
+  index: number
+): Promise<StorageProgramWriteResult>
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `storageAddress` | `string` | ✅ | Storage Program address |
+| `field` | `string` | ✅ | Array field name |
+| `index` | `number` | ✅ | Zero-based index to remove |
+
+#### Example
+
+```typescript
+// Remove the third post from posts array
+await demos.storageProgram.deleteItem(
+  "stor-abc123...",
+  "posts",
+  2
+)
+```
+
+#### Errors
+
+- **400**: Field is not an array
+- **400**: Index out of bounds
+- **403**: Access denied
+- **404**: Storage program not found
+
+---
+
+### granularWrite()
+
+Execute multiple granular operations atomically.
+
+#### Signature
+
+```typescript
+async granularWrite(
+  storageAddress: string,
+  operations: GranularWriteOperation[]
+): Promise<StorageProgramWriteResult>
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `storageAddress` | `string` | ✅ | Storage Program address |
+| `operations` | `GranularWriteOperation[]` | ✅ | Array of operations to execute |
+
+#### GranularWriteOperation
+
+```typescript
+interface GranularWriteOperation {
+  type: "SET_FIELD" | "SET_ITEM" | "APPEND_ITEM" | "DELETE_FIELD" | "DELETE_ITEM"
+  field: string           // Target field name
+  value?: any             // Value for SET/APPEND operations
+  index?: number          // Array index for SET_ITEM/DELETE_ITEM
+}
+```
+
+#### Example
+
+```typescript
+// Execute multiple operations atomically
+await demos.storageProgram.granularWrite(
+  "stor-abc123...",
+  [
+    { type: "SET_FIELD", field: "theme", value: "dark" },
+    { type: "SET_FIELD", field: "lastLogin", value: Date.now() },
+    { type: "APPEND_ITEM", field: "loginHistory", value: { timestamp: Date.now() } },
+    { type: "DELETE_FIELD", field: "tempData" }
+  ]
+)
+```
+
+#### Behavior
+
+- Operations are applied **atomically** in order
+- All operations succeed or all fail
+- Fees calculated on resulting data size difference
+
+#### Errors
+
+- **400**: Invalid operation type
+- **400**: Operations array is required
+- **400**: Field does not exist (for DELETE_FIELD/SET_ITEM)
+- **400**: Field is not an array (for array operations)
+- **400**: Index out of bounds
+- **403**: Access denied
+- **404**: Storage program not found
+
+---
+
+## Granular Read Methods
+
+These methods provide field-level queries without fetching the entire document.
+
+---
+
+### getFields()
+
+Get all top-level field names.
+
+#### Signature
+
+```typescript
+async getFields(
+  storageAddress: string
+): Promise<StorageProgramFieldsResult>
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `storageAddress` | `string` | ✅ | Storage Program address |
+
+#### Returns
+
+```typescript
+{
+  success: boolean
+  storageAddress: string
+  fields: string[]
+}
+```
+
+#### Example
+
+```typescript
+const result = await demos.storageProgram.getFields("stor-abc123...")
+console.log(result.fields) // ["theme", "posts", "settings", "username"]
+```
+
+#### Errors
+
+- **403**: Access denied
+- **404**: Storage program not found
+
+---
+
+### getValue()
+
+Get a specific field's value.
+
+#### Signature
+
+```typescript
+async getValue(
+  storageAddress: string,
+  field: string
+): Promise<StorageProgramValueResult>
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `storageAddress` | `string` | ✅ | Storage Program address |
+| `field` | `string` | ✅ | Field name to retrieve |
+
+#### Returns
+
+```typescript
+{
+  success: boolean
+  storageAddress: string
+  field: string
+  value: any
+  type: StorageFieldType
+}
+```
+
+#### Example
+
+```typescript
+const result = await demos.storageProgram.getValue("stor-abc123...", "theme")
+console.log(result.value) // "dark"
+console.log(result.type)  // "string"
+```
+
+#### Errors
+
+- **403**: Access denied
+- **404**: Storage program not found
+- **404**: Field not found
+
+---
+
+### getItem()
+
+Get an array element by index.
+
+#### Signature
+
+```typescript
+async getItem(
+  storageAddress: string,
+  field: string,
+  index: number
+): Promise<StorageProgramItemResult>
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `storageAddress` | `string` | ✅ | Storage Program address |
+| `field` | `string` | ✅ | Array field name |
+| `index` | `number` | ✅ | Zero-based array index |
+
+#### Returns
+
+```typescript
+{
+  success: boolean
+  storageAddress: string
+  field: string
+  index: number
+  value: any
+}
+```
+
+#### Example
+
+```typescript
+const result = await demos.storageProgram.getItem("stor-abc123...", "posts", 0)
+console.log(result.value) // { title: "First Post", content: "..." }
+```
+
+#### Errors
+
+- **400**: Field is not an array
+- **400**: Index out of bounds
+- **403**: Access denied
+- **404**: Storage program not found
+- **404**: Field not found
+
+---
+
+### hasField()
+
+Check if a field exists.
+
+#### Signature
+
+```typescript
+async hasField(
+  storageAddress: string,
+  field: string
+): Promise<StorageProgramHasFieldResult>
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `storageAddress` | `string` | ✅ | Storage Program address |
+| `field` | `string` | ✅ | Field name to check |
+
+#### Returns
+
+```typescript
+{
+  success: boolean
+  storageAddress: string
+  field: string
+  exists: boolean
+}
+```
+
+#### Example
+
+```typescript
+const result = await demos.storageProgram.hasField("stor-abc123...", "theme")
+if (result.exists) {
+  console.log("Theme field exists")
+}
+```
+
+#### Errors
+
+- **403**: Access denied
+- **404**: Storage program not found
+
+---
+
+### getFieldType()
+
+Get the type of a field's value.
+
+#### Signature
+
+```typescript
+async getFieldType(
+  storageAddress: string,
+  field: string
+): Promise<StorageProgramTypeResult>
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `storageAddress` | `string` | ✅ | Storage Program address |
+| `field` | `string` | ✅ | Field name to check |
+
+#### Returns
+
+```typescript
+{
+  success: boolean
+  storageAddress: string
+  field: string
+  type: StorageFieldType
+}
+```
+
+#### StorageFieldType
+
+```typescript
+type StorageFieldType =
+  | "string"    // Text value
+  | "number"    // Numeric value (integer or float)
+  | "boolean"   // True or false
+  | "array"     // Ordered list of values
+  | "object"    // Key-value mapping
+  | "null"      // Null value
+  | "undefined" // Field exists but value is undefined
+```
+
+#### Example
+
+```typescript
+const result = await demos.storageProgram.getFieldType("stor-abc123...", "posts")
+if (result.type === "array") {
+  // Safe to use array operations
+  const item = await demos.storageProgram.getItem("stor-abc123...", "posts", 0)
+}
+```
+
+#### Errors
+
+- **403**: Access denied
+- **404**: Storage program not found
+- **404**: Field not found
+
+---
+
+### getAll()
+
+Get all data (equivalent to read()).
+
+#### Signature
+
+```typescript
+async getAll(
+  storageAddress: string
+): Promise<StorageProgramAllResult>
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `storageAddress` | `string` | ✅ | Storage Program address |
+
+#### Returns
+
+```typescript
+{
+  success: boolean
+  storageAddress: string
+  data: Record<string, any>
+}
+```
+
+#### Example
+
+```typescript
+const result = await demos.storageProgram.getAll("stor-abc123...")
+console.log(result.data) // { theme: "dark", posts: [...], settings: {...} }
+```
+
+#### Errors
+
+- **403**: Access denied
+- **404**: Storage program not found
+
+---
+
 ## Utility Functions
 
 ### deriveStorageAddress()

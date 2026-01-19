@@ -59,6 +59,251 @@ const posts = await demos.storageProgram.read(storageAddress, 'posts')
 console.log(posts.length) // Number of posts
 ```
 
+## Granular Read Operations
+
+Granular read operations provide field-level access to storage program data for more efficient querying. These endpoints are served via RPC with no transaction cost.
+
+### Available Granular Read Endpoints
+
+| Endpoint | SDK Method | Description |
+|----------|------------|-------------|
+| `/storage-program/:address/fields` | `getFields()` | List all top-level field names |
+| `/storage-program/:address/field/:field` | `getValue(field)` | Get a specific field's value |
+| `/storage-program/:address/field/:field/item/:index` | `getItem(field, index)` | Get an array element by index |
+| `/storage-program/:address/has/:field` | `hasField(field)` | Check if a field exists |
+| `/storage-program/:address/type/:field` | `getFieldType(field)` | Get the type of a field's value |
+| `/storage-program/:address/all` | `getAll()` | Get all data (equivalent to `read()`) |
+| `/storage-program/search/:name` | N/A | Search storage programs by name |
+
+### Get All Field Names
+
+Discover the data structure of a storage program:
+
+```typescript
+const result = await demos.storageProgram.getFields(storageAddress)
+console.log('Fields:', result.fields) // ["theme", "notifications", "settings", "posts"]
+```
+
+**Response Structure**:
+```typescript
+{
+  success: true,
+  storageAddress: "stor-abc123...",
+  fields: ["theme", "notifications", "settings", "posts"]
+}
+```
+
+### Get Field Value
+
+Read a specific field efficiently:
+
+```typescript
+const result = await demos.storageProgram.getValue(storageAddress, 'theme')
+console.log('Theme:', result.value) // "dark"
+console.log('Type:', result.type)   // "string"
+```
+
+**Response Structure**:
+```typescript
+{
+  success: true,
+  storageAddress: "stor-abc123...",
+  field: "theme",
+  value: "dark",
+  type: "string"
+}
+```
+
+### Get Array Item
+
+Access a specific array element without fetching the entire array:
+
+```typescript
+const result = await demos.storageProgram.getItem(storageAddress, 'posts', 0)
+console.log('First post:', result.value) // { title: "Hello World", content: "..." }
+```
+
+**Response Structure**:
+```typescript
+{
+  success: true,
+  storageAddress: "stor-abc123...",
+  field: "posts",
+  index: 0,
+  value: {
+    title: "Hello World",
+    content: "My first post"
+  }
+}
+```
+
+**Error Cases**:
+- `INDEX_OUT_OF_BOUNDS`: Index exceeds array length
+- `INVALID_FIELD_TYPE`: Field is not an array
+
+### Check Field Exists
+
+Lightweight existence check before accessing:
+
+```typescript
+const result = await demos.storageProgram.hasField(storageAddress, 'theme')
+console.log('Has theme:', result.exists) // true
+```
+
+**Response Structure**:
+```typescript
+{
+  success: true,
+  storageAddress: "stor-abc123...",
+  field: "theme",
+  exists: true
+}
+```
+
+### Get Field Type
+
+Determine the type of a field's value:
+
+```typescript
+const result = await demos.storageProgram.getFieldType(storageAddress, 'posts')
+console.log('Type:', result.type) // "array"
+```
+
+**Response Structure**:
+```typescript
+{
+  success: true,
+  storageAddress: "stor-abc123...",
+  field: "posts",
+  type: "array"
+}
+```
+
+**Field Types**:
+| Type | Description |
+|------|-------------|
+| `string` | Text value |
+| `number` | Numeric value (integer or float) |
+| `boolean` | True or false |
+| `array` | Ordered list of values |
+| `object` | Key-value mapping |
+| `null` | Null value |
+| `undefined` | Field exists but value is undefined |
+
+### Get All Data
+
+Retrieve all data (equivalent to `read()` but with simplified response):
+
+```typescript
+const result = await demos.storageProgram.getAll(storageAddress)
+console.log('Data:', result.data)
+```
+
+**Response Structure**:
+```typescript
+{
+  success: true,
+  storageAddress: "stor-abc123...",
+  data: {
+    theme: "dark",
+    notifications: true,
+    settings: { language: "en" },
+    posts: [{ title: "Post 1" }]
+  }
+}
+```
+
+### Search by Name
+
+Find storage programs by name with partial matching:
+
+```http
+GET /storage-program/search/user
+```
+
+**Response Structure**:
+```typescript
+{
+  success: true,
+  query: "user",
+  programs: [
+    {
+      storageAddress: "stor-abc123...",
+      programName: "user-preferences",
+      owner: "ed25519:...",
+      sizeBytes: 1024
+    },
+    {
+      storageAddress: "stor-def456...",
+      programName: "user-settings",
+      owner: "ed25519:...",
+      sizeBytes: 512
+    }
+  ],
+  count: 2
+}
+```
+
+### When to Use Granular Reads
+
+| Scenario | Recommended Method | Reason |
+|----------|-------------------|--------|
+| Need one field | `getValue()` | Reduced bandwidth |
+| Check field exists | `hasField()` | Lightweight check |
+| Iterate array elements | `getItem()` | No need to fetch entire array |
+| Explore data structure | `getFields()` | Discover available fields |
+| Type validation | `getFieldType()` | Verify before operations |
+| Full document | `read()` or `getAll()` | Single request for everything |
+
+### Granular Read Examples
+
+#### Efficient Data Discovery
+
+```typescript
+// Step 1: Discover available fields
+const fields = await demos.storageProgram.getFields(storageAddress)
+console.log('Available fields:', fields.fields)
+
+// Step 2: Check field types before accessing
+const postsType = await demos.storageProgram.getFieldType(storageAddress, 'posts')
+if (postsType.type === 'array') {
+  // Step 3: Access array items individually
+  const firstPost = await demos.storageProgram.getItem(storageAddress, 'posts', 0)
+  console.log('First post:', firstPost.value)
+}
+```
+
+#### Conditional Field Access
+
+```typescript
+// Check if field exists before reading
+const hasTheme = await demos.storageProgram.hasField(storageAddress, 'theme')
+
+if (hasTheme.exists) {
+  const theme = await demos.storageProgram.getValue(storageAddress, 'theme')
+  applyTheme(theme.value)
+} else {
+  applyTheme('default')
+}
+```
+
+#### Parallel Granular Queries
+
+```typescript
+// Fetch multiple fields in parallel for better performance
+const [theme, notifications, language] = await Promise.all([
+  demos.storageProgram.getValue(storageAddress, 'theme'),
+  demos.storageProgram.getValue(storageAddress, 'notifications'),
+  demos.storageProgram.getValue(storageAddress, 'language')
+])
+
+console.log('Settings:', {
+  theme: theme.value,
+  notifications: notifications.value,
+  language: language.value
+})
+```
+
 ## Performance Optimization
 
 ### Batch Queries

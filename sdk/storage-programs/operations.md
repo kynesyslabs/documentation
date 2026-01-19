@@ -10,7 +10,9 @@ This guide explains how each Storage Program operation fits into an end-to-end w
 |-----------|--------------|-----------------|-------------|
 | `create` | ✅ Yes | Any deployer | Provision a new storage namespace with optional data |
 | `write` | ✅ Yes | Deployer + allowed addresses | Merge updates into existing data |
+| `granularWrite` | ✅ Yes | Deployer + allowed addresses | Field-level modifications (set, append, delete) |
 | `read` | ❌ No (RPC) | According to access mode | Fetch storage content or metadata |
+| `granularRead` | ❌ No (RPC) | According to access mode | Field-level queries (get field, check exists, get type) |
 | `updateAccessControl` | ✅ Yes | Deployer only | Change access mode and/or allowlist |
 | `delete` | ✅ Yes | Deployer only | Remove a storage program and its data |
 
@@ -47,6 +49,48 @@ This guide explains how each Storage Program operation fits into an end-to-end w
 
 **References**: [API Reference – write](./api-reference.md#sdk-methods), [Cookbook – update patterns](../cookbook/storage-programs/examples.md).
 
+## Granular Write
+
+**Goal**: Perform field-level modifications without replacing the entire dataset.
+
+**Workflow**
+1. Choose the appropriate operation type for your use case:
+   - `setField`: Set or update a top-level field value
+   - `setItem`: Update a specific array element by index
+   - `appendItem`: Add a new item to an array field
+   - `deleteField`: Remove a top-level field entirely
+   - `deleteItem`: Remove an array element by index
+2. Build an array of operations to execute atomically.
+3. Submit a `granularWrite` transaction; operations apply in order.
+4. Optionally re-read to confirm changes.
+
+**Pre-flight checks**
+- All field names must be top-level keys (nested paths not supported).
+- Array indices must be within bounds for `setItem` and `deleteItem`.
+- Combined data size after modifications must remain under 128KB.
+- Callers must satisfy access control (deployer or allowlisted address).
+
+**Operation Types**
+
+| Type | Required Fields | Description |
+|------|-----------------|-------------|
+| `SET_FIELD` | `field`, `value` | Set a top-level field value |
+| `SET_ITEM` | `field`, `index`, `value` | Update array element at index |
+| `APPEND_ITEM` | `field`, `value` | Append item to array field |
+| `DELETE_FIELD` | `field` | Remove a top-level field |
+| `DELETE_ITEM` | `field`, `index` | Remove array element at index |
+
+**When to use Granular Write vs Write**
+
+| Scenario | Recommended | Reason |
+|----------|-------------|--------|
+| Update single field | `granularWrite` | Less bandwidth, atomic |
+| Add item to array | `granularWrite` | No need to send entire array |
+| Replace all data | `write` | Full replacement simpler |
+| Multiple field updates | Either | Depends on change percentage |
+
+**References**: [API Reference – granularWrite](./api-reference.md#granular-write-methods), [Cookbook – granular patterns](../cookbook/storage-programs/examples.md).
+
 ## Read
 
 **Goal**: Retrieve storage variables or metadata over RPC with no transaction cost.
@@ -61,6 +105,60 @@ This guide explains how each Storage Program operation fits into an end-to-end w
 - Treat responses as eventually consistent; pair with webhooks/polling if you need freshness.
 
 **References**: [RPC Queries guide](./rpc-queries.md), [API Reference – read](./api-reference.md#sdk-methods).
+
+## Granular Read
+
+**Goal**: Query specific fields, check field existence, or get field types without fetching the entire document.
+
+**Workflow**
+1. Choose the appropriate granular read method:
+   - `getFields()`: List all top-level field names
+   - `getValue(field)`: Get a specific field's value
+   - `getItem(field, index)`: Get an array element by index
+   - `hasField(field)`: Check if a field exists
+   - `getFieldType(field)`: Get the type of a field's value
+   - `getAll()`: Get all data (equivalent to `read()`)
+2. Use the appropriate method based on what information you need.
+3. Cache results using field names and types for efficient subsequent queries.
+
+**Pre-flight checks**
+- Ensure the caller has read permission under the current access mode.
+- For array operations, verify the field is actually an array first using `getFieldType()`.
+
+**Available Methods**
+
+| Method | Returns | Use Case |
+|--------|---------|----------|
+| `getFields()` | `string[]` | Discover available data structure |
+| `getValue(field)` | `any` + `type` | Read single field efficiently |
+| `getItem(field, index)` | `any` | Access array elements directly |
+| `hasField(field)` | `boolean` | Check before accessing |
+| `getFieldType(field)` | `StorageFieldType` | Type validation before operations |
+| `getAll()` | Full data | When you need everything |
+
+**Field Types**
+
+| Type | Description |
+|------|-------------|
+| `string` | Text value |
+| `number` | Numeric value (integer or float) |
+| `boolean` | True or false |
+| `array` | Ordered list of values |
+| `object` | Key-value mapping |
+| `null` | Null value |
+| `undefined` | Field exists but value is undefined |
+
+**When to use Granular Read vs Read**
+
+| Scenario | Recommended | Reason |
+|----------|-------------|--------|
+| Need one field | `getValue()` | Reduced bandwidth |
+| Check field exists | `hasField()` | Lightweight check |
+| Iterate array | `getItem()` | No need to fetch entire array |
+| Full document | `read()` | Single request for everything |
+| Explore structure | `getFields()` | Discover available data |
+
+**References**: [RPC Queries guide](./rpc-queries.md), [API Reference – granularRead](./api-reference.md#granular-read-methods).
 
 ## Update Access Control
 
